@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Order Placed — SmartCart</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    .success-wrap{min-height:60vh;display:flex;align-items:center;justify-content:center;padding:32px 16px}
+    .success-card{background:#fff;border-radius:4px;box-shadow:var(--shadow-md);padding:48px 40px;max-width:560px;width:100%;text-align:center}
+    .success-anim{font-size:80px;animation:pop .5s cubic-bezier(.68,-.55,.265,1.55)}
+    @keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+    .order-id{background:var(--bg);border-radius:4px;padding:12px 20px;font-family:monospace;font-size:16px;font-weight:700;color:var(--primary);margin:16px 0;display:inline-block}
+    .detail-row{display:flex;justify-content:space-between;padding:8px 0;font-size:14px;border-bottom:1px solid var(--border)}
+    .detail-row:last-child{border-bottom:none}
+    .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+  </style>
+</head>
+<body>
+<div id="navbar"></div>
+<div class="success-wrap">
+  <div class="success-card" id="successCard">
+    <div class="loading-wrap"><div class="spinner"></div></div>
+  </div>
+</div>
+<div id="footer"></div>
+<script src="/js/api.js"></script>
+<script>
+const orderId=new URLSearchParams(window.location.search).get('id');
+
+async function loadSuccess(){
+  const card=document.getElementById('successCard');
+  if(!orderId){card.innerHTML='<div class="empty-state"><h3>Order not found</h3><a href="/index.html" class="btn btn-primary" style="margin-top:16px">Go Home</a></div>';return;}
+  const res=await OrderAPI.getOne(orderId);
+  if(!res?.ok){card.innerHTML='<div class="empty-state"><h3>Order not found</h3></div>';return;}
+  const o=res.data.order;
+  const shortId='#'+o._id.slice(-8).toUpperCase();
+  card.innerHTML=`
+    <div class="success-anim">🎉</div>
+    <h2 style="font-size:26px;font-weight:700;color:var(--green);margin:16px 0 8px">Order Placed Successfully!</h2>
+    <p style="color:var(--text-secondary);font-size:14px;margin-bottom:16px">Thank you for shopping with SmartCart! Your order is confirmed.</p>
+    <div class="order-id">Order ${shortId}</div>
+    <div style="background:var(--bg);border-radius:4px;padding:20px;margin:20px 0;text-align:left">
+      <div class="detail-row"><span style="color:var(--text-secondary)">Items</span><span>${o.items.length} item${o.items.length!==1?'s':''}</span></div>
+      <div class="detail-row"><span style="color:var(--text-secondary)">Payment</span><span>${o.paymentMethod}</span></div>
+      <div class="detail-row"><span style="color:var(--text-secondary)">Amount Paid</span><span style="font-weight:700;color:var(--primary)">${fmt.price(o.totalPrice)}</span></div>
+      <div class="detail-row"><span style="color:var(--text-secondary)">Delivery To</span><span>${o.shippingAddress.city}, ${o.shippingAddress.state}</span></div>
+      <div class="detail-row"><span style="color:var(--text-secondary)">Expected By</span><span style="color:var(--green);font-weight:600">${getDeliveryDate(5)}</span></div>
+    </div>
+    <div style="font-size:13px;color:var(--text-secondary);padding:12px;background:#e8f5e9;border-radius:4px">📧 Order confirmation email has been sent to your registered email address.</div>
+    <div class="actions">
+      <a href="/pages/orders.html" class="btn btn-secondary">📦 Track Order</a>
+      <a href="/index.html" class="btn btn-outline">Continue Shopping</a>
+    </div>`;
+}
+
+document.addEventListener('DOMContentLoaded',loadSuccess);
+</script>
+</body>
+</html>

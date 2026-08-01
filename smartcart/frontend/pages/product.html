@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Product — SmartCart</title>
+  <meta name="description" content="View product details, ratings, and add to cart on SmartCart."/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    .buy-btns { display: flex; gap: 16px; margin: 24px 0; flex-wrap: wrap; }
+    .offer-list { list-style: disc; padding-left: 20px; }
+    .offer-list li { font-size: 14px; color: var(--text); margin-bottom: 8px; }
+    .offer-list li strong { color: var(--primary); }
+    .review-card { padding: 16px 0; border-bottom: 1px solid var(--border); }
+    .review-card:last-child { border-bottom: none; }
+    .review-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .review-name { font-weight: 600; font-size: 14px; }
+    .review-date { font-size: 12px; color: var(--text-secondary); }
+    .review-text { font-size: 14px; color: var(--text); line-height: 1.6; }
+    .rating-overview { display: flex; gap: 32px; align-items: center; padding: 20px 0; }
+    .rating-big { font-size: 64px; font-weight: 700; color: var(--text); line-height: 1; }
+    .rating-bars { flex: 1; }
+    .rating-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: var(--text-secondary); }
+    .rating-bar { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+    .rating-bar-fill { height: 100%; background: var(--green); border-radius: 4px; transition: width 0.5s; }
+    .stock-badge { font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 12px; display: inline-flex; align-items: center; gap: 6px; }
+    .stock-in { background: #e8f5e9; color: var(--green); }
+    .stock-out { background: #ffebee; color: var(--red); }
+    .pincode-row { display: flex; gap: 8px; align-items: center; margin: 12px 0; }
+    .pincode-row input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 2px; font-size: 14px; width: 160px; outline: none; }
+    .pincode-row button { color: var(--primary); background: none; border: none; font-weight: 700; cursor: pointer; }
+    .related-products { padding: 0 0 16px; }
+  </style>
+</head>
+<body>
+<div id="navbar"></div>
+<div class="container page-wrap">
+  <div class="breadcrumb" id="breadcrumb"><span>Loading...</span></div>
+  <div id="productContent">
+    <div class="loading-wrap"><div class="spinner"></div><p>Loading product...</p></div>
+  </div>
+  <div class="section-card" id="relatedSection" style="display:none;margin-top:12px">
+    <div class="section-header"><div class="section-title">Similar Products</div></div>
+    <div class="products-scroll related-products" id="relatedProducts"></div>
+  </div>
+</div>
+<div id="footer"></div>
+<!-- External scripts only — no inline JS to avoid any CSP issues -->
+<script src="/js/api.js"></script>
+<script src="/js/product.js"></script>
+</body>
+</html>

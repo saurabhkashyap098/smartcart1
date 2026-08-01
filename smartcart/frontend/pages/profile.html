@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Profile — SmartCart</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    .profile-layout{display:grid;grid-template-columns:240px 1fr;gap:16px}
+    .avatar-wrap{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#0a52d4);display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;font-weight:700;margin:0 auto 12px}
+    .section-title-sm{font-size:16px;font-weight:700;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--primary)}
+    @media(max-width:768px){.profile-layout{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div id="navbar"></div>
+<div class="container page-wrap">
+  <div class="breadcrumb"><a href="/index.html">Home</a><span class="sep">›</span><span>My Profile</span></div>
+  <div class="profile-layout">
+    <!-- Sidebar -->
+    <div>
+      <div class="card" style="margin-bottom:12px;text-align:center;padding:20px">
+        <div class="avatar-wrap" id="avatarEl">?</div>
+        <div id="profileNameEl" style="font-size:18px;font-weight:700"></div>
+        <div id="profileEmailEl" style="font-size:13px;color:var(--text-secondary);margin-top:4px"></div>
+        <div style="margin-top:12px"><span class="badge badge-info" id="roleBadge"></span></div>
+      </div>
+      <div class="card" style="height:fit-content">
+        <div style="padding:8px 0">
+          <a href="/pages/profile.html" class="admin-nav-item active"><span class="nav-icon">👤</span>Profile</a>
+          <a href="/pages/orders.html" class="admin-nav-item"><span class="nav-icon">📦</span>Orders</a>
+          <a href="/pages/wishlist.html" class="admin-nav-item"><span class="nav-icon">❤️</span>Wishlist</a>
+          <div class="admin-nav-item" onclick="showSection('addresses')" style="cursor:pointer"><span class="nav-icon">📍</span>Addresses</div>
+          <div class="admin-nav-item" onclick="showSection('security')" style="cursor:pointer"><span class="nav-icon">🔐</span>Change Password</div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:8px 0"/>
+          <div class="admin-nav-item" onclick="logout()" style="color:var(--red);cursor:pointer"><span class="nav-icon">🚪</span>Logout</div>
+        </div>
+      </div>
+    </div>
+    <!-- Content -->
+    <div id="mainContent">
+      <div class="loading-wrap"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Address Modal -->
+<div class="modal-overlay" id="addrModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="addrModalTitle">Add New Address</span><button class="modal-close" onclick="closeAddrModal()">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="editAddrId"/>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="aName" placeholder="Recipient name"/></div>
+        <div class="form-group"><label class="form-label">Phone *</label><input class="form-control" id="aPhone" placeholder="10-digit mobile"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Address Line 1 *</label><input class="form-control" id="aLine1" placeholder="House No, Building, Street, Area"/></div>
+      <div class="form-group"><label class="form-label">Address Line 2</label><input class="form-control" id="aLine2" placeholder="Locality, Landmark (Optional)"/></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">City *</label><input class="form-control" id="aCity"/></div>
+        <div class="form-group"><label class="form-label">State *</label><input class="form-control" id="aState"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Pincode *</label><input class="form-control" id="aPin" maxlength="6"/></div>
+        <div class="form-group"><label class="form-label">Type</label><select class="form-control" id="aType"><option>Home</option><option>Work</option><option>Other</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAddrModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAddress()">Save Address</button>
+    </div>
+  </div>
+</div>
+
+<div id="footer"></div>
+<script src="/js/api.js"></script>
+<script>
+if(!Auth.isLoggedIn()){window.location.href='/pages/login.html?redirect=/pages/profile.html';}
+let userData=null, currentSection='profile';
+
+async function loadProfile(){
+  const res=await AuthAPI.getMe();
+  if(!res?.ok){showToast('Failed to load profile','error');return;}
+  userData=res.data.user;
+  const initials=userData.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('avatarEl').textContent=initials;
+  document.getElementById('profileNameEl').textContent=userData.name;
+  document.getElementById('profileEmailEl').textContent=userData.email;
+  document.getElementById('roleBadge').textContent=userData.role==='admin'?'Admin':'Member';
+  const hash=window.location.hash.replace('#','');
+  showSection(hash||'profile');
+}
+
+function showSection(sec){
+  currentSection=sec;
+  document.querySelectorAll('.admin-nav-item').forEach(el=>el.classList.remove('active'));
+  const mc=document.getElementById('mainContent');
+  if(sec==='profile') renderProfileForm(mc);
+  else if(sec==='addresses') renderAddresses(mc);
+  else if(sec==='security') renderSecurity(mc);
+}
+
+function renderProfileForm(mc){
+  mc.innerHTML=`<div class="card">
+    <div class="card-header">Personal Information</div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="pName" value="${userData.name}"/></div>
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="pPhone" value="${userData.phone||''}" placeholder="10-digit mobile"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email (read-only)</label><input class="form-control" value="${userData.email}" readonly style="background:var(--bg)"/></div>
+      <div style="margin-top:8px"><button class="btn btn-primary" onclick="saveProfile()">Save Changes</button></div>
+    </div>
+  </div>`;
+}
+
+function renderAddresses(mc){
+  const addrs=userData.addresses||[];
+  mc.innerHTML=`<div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span>My Addresses</span>
+      <button class="btn btn-outline btn-sm" onclick="openAddrModal()">+ Add Address</button>
+    </div>
+    <div class="card-body">
+      ${addrs.length?addrs.map(a=>`
+      <div style="border:1px solid var(--border);border-radius:4px;padding:16px;margin-bottom:12px;position:relative">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+          <div>
+            <span class="badge badge-info" style="margin-bottom:8px">${a.type}</span>${a.isDefault?'<span class="badge badge-success" style="margin-left:6px">Default</span>':''}
+            <div style="font-weight:600;font-size:14px">${a.name} &nbsp;<span style="font-size:12px;color:var(--text-secondary);font-weight:400">${a.phone}</span></div>
+            <div style="font-size:13px;color:#555;margin-top:4px;line-height:1.6">${a.addressLine1}${a.addressLine2?', '+a.addressLine2:''}<br/>${a.city}, ${a.state} — ${a.pincode}</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="editAddress('${a._id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteAddress('${a._id}')">Remove</button>
+          </div>
+        </div>
+      </div>`).join(''):`<div class="empty-state" style="padding:32px"><div class="empty-icon" style="font-size:40px">📍</div><h3>No saved addresses</h3><p>Add an address to speed up checkout</p></div>`}
+    </div>
+  </div>`;
+}
+
+function renderSecurity(mc){
+  mc.innerHTML=`<div class="card">
+    <div class="card-header">Change Password</div>
+    <div class="card-body" style="max-width:400px">
+      <div class="form-group"><label class="form-label">Current Password</label><div class="input-group"><input type="password" class="form-control" id="curPass"/><span class="input-icon" onclick="togglePwd('curPass')">👁</span></div></div>
+      <div class="form-group"><label class="form-label">New Password</label><div class="input-group"><input type="password" class="form-control" id="newPass" placeholder="Min 6 characters"/><span class="input-icon" onclick="togglePwd('newPass')">👁</span></div></div>
+      <div class="form-group"><label class="form-label">Confirm New Password</label><div class="input-group"><input type="password" class="form-control" id="confPass"/><span class="input-icon" onclick="togglePwd('confPass')">👁</span></div></div>
+      <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
+    </div>
+  </div>`;
+}
+
+function togglePwd(id){const i=document.getElementById(id);i.type=i.type==='password'?'text':'password';}
+
+async function saveProfile(){
+  const name=document.getElementById('pName').value.trim();
+  const phone=document.getElementById('pPhone').value.trim();
+  if(!name){showToast('Name is required','error');return;}
+  const res=await AuthAPI.updateProfile({name,phone:phone||undefined});
+  if(res?.ok){userData=res.data.user;Auth.setSession(Auth.getToken(),userData);showToast('Profile updated ✅');document.getElementById('profileNameEl').textContent=userData.name;}
+  else showToast(res?.data?.message||'Failed','error');
+}
+
+async function changePassword(){
+  const cur=document.getElementById('curPass').value;
+  const nw=document.getElementById('newPass').value;
+  const conf=document.getElementById('confPass').value;
+  if(!cur||!nw||!conf){showToast('All fields required','error');return;}
+  if(nw!==conf){showToast('New passwords do not match','error');return;}
+  if(nw.length<6){showToast('Password must be at least 6 characters','error');return;}
+  const res=await AuthAPI.changePassword({currentPassword:cur,newPassword:nw});
+  if(res?.ok){showToast('Password changed successfully 🔐');document.getElementById('curPass').value='';document.getElementById('newPass').value='';document.getElementById('confPass').value='';}
+  else showToast(res?.data?.message||'Failed','error');
+}
+
+function openAddrModal(addr=null){
+  document.getElementById('addrModalTitle').textContent=addr?'Edit Address':'Add New Address';
+  document.getElementById('editAddrId').value=addr?addr._id:'';
+  document.getElementById('aName').value=addr?.name||'';
+  document.getElementById('aPhone').value=addr?.phone||'';
+  document.getElementById('aLine1').value=addr?.addressLine1||'';
+  document.getElementById('aLine2').value=addr?.addressLine2||'';
+  document.getElementById('aCity').value=addr?.city||'';
+  document.getElementById('aState').value=addr?.state||'';
+  document.getElementById('aPin').value=addr?.pincode||'';
+  document.getElementById('aType').value=addr?.type||'Home';
+  document.getElementById('addrModal').classList.add('open');
+}
+function closeAddrModal(){document.getElementById('addrModal').classList.remove('open');}
+
+function editAddress(id){
+  const addr=userData.addresses.find(a=>a._id===id);
+  if(addr)openAddrModal(addr);
+}
+async function deleteAddress(id){
+  if(!confirm('Remove this address?'))return;
+  const res=await AuthAPI.deleteAddress(id);
+  if(res?.ok){userData=res.data.user;renderAddresses(document.getElementById('mainContent'));showToast('Address removed');}
+  else showToast(res?.data?.message||'Failed','error');
+}
+async function saveAddress(){
+  const body={name:document.getElementById('aName').value,phone:document.getElementById('aPhone').value,addressLine1:document.getElementById('aLine1').value,addressLine2:document.getElementById('aLine2').value,city:document.getElementById('aCity').value,state:document.getElementById('aState').value,pincode:document.getElementById('aPin').value,type:document.getElementById('aType').value};
+  if(!body.name||!body.phone||!body.addressLine1||!body.city||!body.state||!body.pincode){showToast('Please fill all required fields','error');return;}
+  const editId=document.getElementById('editAddrId').value;
+  const res=editId?await AuthAPI.updateAddress(editId,body):await AuthAPI.addAddress(body);
+  if(res?.ok){userData=res.data.user;closeAddrModal();renderAddresses(document.getElementById('mainContent'));showToast(editId?'Address updated':'Address saved ✅');}
+  else showToast(res?.data?.message||'Failed','error');
+}
+function logout(){Auth.clearSession();window.location.href='/index.html';}
+
+document.addEventListener('DOMContentLoaded',loadProfile);
+</script>
+</body>
+</html>

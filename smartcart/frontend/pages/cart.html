@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cart — SmartCart</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    .cart-header-bar{background:#fff;padding:12px 20px;font-size:20px;font-weight:700;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .savings-strip{background:#f0fff4;color:var(--green);font-size:14px;font-weight:600;padding:10px 20px;border-bottom:1px solid #c3e6cb}
+    .price-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;position:sticky;top:72px}
+    .price-card-header{background:var(--bg);padding:14px 20px;font-size:13px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+    .price-card-body{padding:20px}
+  </style>
+</head>
+<body>
+<div id="navbar"></div>
+<div class="container page-wrap">
+  <div class="breadcrumb"><a href="/index.html">Home</a><span class="sep">›</span><span>Cart</span></div>
+  <div id="cartContent">
+    <div class="loading-wrap"><div class="spinner"></div><p>Loading your cart...</p></div>
+  </div>
+</div>
+<div id="footer"></div>
+<script src="/js/api.js"></script>
+<script>
+if(!Auth.isLoggedIn()){window.location.href='/pages/login.html?redirect=/pages/cart.html';}
+
+async function loadCart(){
+  const res=await CartAPI.get();
+  const el=document.getElementById('cartContent');
+  if(!res?.ok){el.innerHTML='<div class="empty-state"><div class="empty-icon">😕</div><h3>Failed to load cart</h3></div>';return;}
+  const cart=res.data.cart;
+  if(!cart||cart.items.length===0){
+    el.innerHTML=`<div class="section-card"><div class="empty-state" style="padding:80px 32px"><div class="empty-icon">🛒</div><h3>Your cart is empty!</h3><p>Add items to it now.</p><a href="/pages/products.html" class="btn btn-primary btn-lg" style="margin-top:8px">Shop Now</a></div></div>`;
+    return;
+  }
+  const savings=cart.items.reduce((a,i)=>a+(i.originalPrice-i.price)*i.quantity,0);
+  el.innerHTML=`
+  <div class="cart-layout">
+    <div>
+      <div class="section-card">
+        <div class="cart-header-bar"><span>My Cart (${cart.totalItems} item${cart.totalItems!==1?'s':''})</span><a href="/pages/products.html" style="font-size:13px;color:var(--primary)">Continue Shopping</a></div>
+        ${savings>0?`<div class="savings-strip">🎉 You're saving ${fmt.price(savings)} on this order!</div>`:''}
+        <div id="cartItems">${cart.items.map(renderItem).join('')}</div>
+        <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+          <button class="btn btn-secondary btn-lg" onclick="window.location.href='/pages/checkout.html'">Place Order →</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="price-card">
+        <div class="price-card-header">Price Details</div>
+        <div class="price-card-body price-summary">
+          <div class="summary-row"><span>Price (${cart.totalItems} item${cart.totalItems!==1?'s':''})</span><span>${fmt.price(cart.itemsTotal+savings)}</span></div>
+          ${savings>0?`<div class="summary-row" style="color:var(--green)"><span>Discount</span><span>−${fmt.price(savings)}</span></div>`:''}
+          <div class="summary-row"><span>Delivery Charges</span><span class="${cart.shippingCharge===0?'delivery-msg':''}">${cart.shippingCharge===0?'<span class="free">FREE</span>':fmt.price(cart.shippingCharge)}</span></div>
+          <div class="summary-row"><span>Secured Packaging</span><span style="color:var(--green)">FREE</span></div>
+          <div class="summary-row total-row" style="padding-top:14px;border-top:2px dashed var(--border)"><span>Total Amount</span><span>${fmt.price(cart.totalAmount)}</span></div>
+          ${savings>0?`<div style="color:var(--green);font-size:13px;font-weight:600;padding:12px 0;border-top:1px solid var(--border)">You will save ${fmt.price(savings)} on this order 🎉</div>`:''}
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-top:12px;font-size:13px;color:var(--text-secondary)">
+        <div style="font-weight:700;color:var(--text);margin-bottom:8px">Safe and Secure Payments</div>
+        <div>Easy returns. 100% Authentic products.</div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <span class="payment-icon">💳 Visa</span><span class="payment-icon">💳 Mastercard</span><span class="payment-icon">📱 UPI</span><span class="payment-icon">📦 COD</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderItem(item){
+  return `<div class="cart-item" id="item-${item.product}">
+    <div class="cart-img" onclick="window.location.href='/pages/product.html?id=${item.product}'" style="cursor:pointer">
+      <img src="${item.image||'https://via.placeholder.com/80?text=Product'}" alt="${item.name}"/>
+    </div>
+    <div class="cart-info">
+      <div class="cart-name" onclick="window.location.href='/pages/product.html?id=${item.product}'" style="cursor:pointer">${item.name}</div>
+      <div class="cart-seller" style="color:var(--green)">✓ In Stock &nbsp;|&nbsp; <span style="color:var(--text-secondary)">Seller: ${item.seller||'SmartCart'}</span></div>
+      <div class="product-price" style="margin:6px 0">
+        <span class="price-current">${fmt.price(item.price)}</span>
+        ${item.originalPrice>item.price?`<span class="price-original">${fmt.price(item.originalPrice)}</span><span class="price-discount">${Math.round((item.originalPrice-item.price)/item.originalPrice*100)}% off</span>`:''}
+      </div>
+      <div style="font-size:12px;color:var(--green)">✅ Free Delivery</div>
+      <div style="display:flex;align-items:center;gap:24px;margin-top:12px">
+        <div class="cart-qty">
+          <button class="qty-btn" onclick="changeQty('${item.product}',${item.quantity-1})" ${item.quantity<=1?'disabled':''}>−</button>
+          <span class="qty-num">${item.quantity}</span>
+          <button class="qty-btn" onclick="changeQty('${item.product}',${item.quantity+1})" ${item.quantity>=10?'disabled':''}>+</button>
+        </div>
+        <button class="cart-action-btn" onclick="saveForLater('${item.product}')">Save for Later</button>
+        <button class="cart-action-btn remove" onclick="removeItem('${item.product}')">Remove</button>
+      </div>
+    </div>
+    <div style="min-width:100px;text-align:right">
+      <div style="font-size:18px;font-weight:700">${fmt.price(item.price*item.quantity)}</div>
+      ${item.originalPrice>item.price?`<div style="font-size:12px;color:var(--green)">${Math.round((item.originalPrice-item.price)/item.originalPrice*100)}% off</div>`:''}
+    </div>
+  </div>`;
+}
+
+async function changeQty(pid,qty){
+  if(qty<1)return;
+  const res=await CartAPI.update(pid,qty);
+  if(res?.ok){loadCart();updateCartBadge();}
+  else showToast(res?.data?.message||'Failed','error');
+}
+async function removeItem(pid){
+  const res=await CartAPI.remove(pid);
+  if(res?.ok){showToast('Item removed');loadCart();updateCartBadge();}
+  else showToast('Failed to remove','error');
+}
+async function saveForLater(pid){
+  const wRes=await AuthAPI.toggleWishlist(pid);
+  const cRes=await CartAPI.remove(pid);
+  if(cRes?.ok){showToast('Saved to Wishlist ❤️');loadCart();updateCartBadge();}
+}
+
+document.addEventListener('DOMContentLoaded',loadCart);
+</script>
+</body>
+</html>

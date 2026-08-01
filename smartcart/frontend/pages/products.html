@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Products — SmartCart</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    .products-layout { display: grid; grid-template-columns: 240px 1fr; gap: 0; background: var(--border); }
+    .sidebar-wrap { background: #fff; }
+    .main-area { background: var(--bg); }
+    .sort-bar { background: #fff; display: flex; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .sort-bar span { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+    .sort-options { display: flex; gap: 20px; flex-wrap: wrap; }
+    .sort-opt { font-size: 14px; color: var(--text-secondary); cursor: pointer; padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.2s; }
+    .sort-opt:hover, .sort-opt.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+    .results-count { font-size: 13px; color: var(--text-secondary); margin-left: auto; }
+    @media(max-width:768px) { .products-layout { grid-template-columns: 1fr; } .sidebar-wrap { display: none; } }
+  </style>
+</head>
+<body>
+<div id="navbar"></div>
+<div class="container page-wrap">
+  <div class="breadcrumb" id="breadcrumb"></div>
+  <div class="products-layout section-card">
+    <!-- Sidebar -->
+    <div class="sidebar-wrap filter-sidebar">
+      <div style="padding:16px 0 8px;font-size:16px;font-weight:700;border-bottom:1px solid var(--border);margin-bottom:8px">Filters</div>
+      <div class="filter-section">
+        <div class="filter-title">Price Range</div>
+        <div class="price-range">
+          <input type="range" min="0" max="200000" step="500" id="priceRange" value="200000"/>
+          <div class="price-inputs">
+            <input type="number" id="minPrice" placeholder="Min" value="0"/>
+            <span>—</span>
+            <input type="number" id="maxPrice" placeholder="Max" value="200000"/>
+          </div>
+        </div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-title">Customer Rating</div>
+        <div id="ratingFilters">
+          <label class="filter-option"><input type="checkbox" value="4"/> <label>4★ & above</label></label>
+          <label class="filter-option"><input type="checkbox" value="3"/> <label>3★ & above</label></label>
+        </div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-title">Brand</div>
+        <div id="brandFilters"></div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-title">Availability</div>
+        <label class="filter-option"><input type="checkbox" id="inStock"/> <label>In Stock</label></label>
+      </div>
+      <div style="padding:16px 0">
+        <button class="btn btn-outline btn-sm btn-block" onclick="clearFilters()">Clear All Filters</button>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main-area">
+      <div class="sort-bar">
+        <span>Sort By</span>
+        <div class="sort-options">
+          <span class="sort-opt active" data-sort="">Relevance</span>
+          <span class="sort-opt" data-sort="popular">Popularity</span>
+          <span class="sort-opt" data-sort="rating">Rating</span>
+          <span class="sort-opt" data-sort="price-asc">Price: Low to High</span>
+          <span class="sort-opt" data-sort="price-desc">Price: High to Low</span>
+        </div>
+        <span class="results-count" id="resultsCount"></span>
+      </div>
+      <div class="products-grid" id="productGrid">
+        <div class="loading-wrap" style="grid-column:1/-1"><div class="spinner"></div><p>Loading products...</p></div>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+<div id="footer"></div>
+<script src="/js/api.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+let currentPage = 1, currentSort = '', currentCategory = params.get('category') || '', currentBrand = '', minP = 0, maxP = 200000, searchQ = params.get('search') || '';
+
+// Breadcrumb
+const bc = document.getElementById('breadcrumb');
+bc.innerHTML = `<a href="/index.html">Home</a><span class="sep">›</span>`;
+if (currentCategory) bc.innerHTML += `<span>${currentCategory}</span>`;
+else if (searchQ) bc.innerHTML += `<span>Search: "${searchQ}"</span>`;
+else bc.innerHTML += `<span>All Products</span>`;
+
+let currentRating = 0;
+async function loadProducts() {
+  const grid = document.getElementById('productGrid');
+  grid.innerHTML = '<div class="loading-wrap" style="grid-column:1/-1"><div class="spinner"></div><p>Loading...</p></div>';
+  const q = { page: currentPage, limit: 20 };
+  if (currentSort) q.sort = currentSort;
+  if (currentCategory) q.category = currentCategory;
+  if (currentBrand) q.brand = currentBrand;
+  if (searchQ) q.search = searchQ;
+  if (minP > 0) q.minPrice = minP;
+  if (maxP < 200000) q.maxPrice = maxP;
+  if (currentRating > 0) q.rating = currentRating;
+  const res = await ProductAPI.getAll(q);
+  if (res?.ok && res.data.products) {
+    const { products, total, pages } = res.data;
+    document.getElementById('resultsCount').textContent = `${total.toLocaleString('en-IN')} results`;
+    grid.innerHTML = products.length
+      ? products.map(p => buildProductCard(p, wishlistSet.has(p._id))).join('')
+      : '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><h3>No products found</h3><p>Try adjusting your filters</p></div>';
+    buildPagination(currentPage, pages);
+    // Populate brand filter only once
+    const brandEl = document.getElementById('brandFilters');
+    if (brandEl && !brandEl.children.length) {
+      const brands = [...new Set(products.map(p => p.brand))];
+      brands.forEach(b => {
+        brandEl.innerHTML += `<label class="filter-option"><input type="checkbox" value="${b}" onchange="filterBrand(this)"/><label>${b}</label></label>`;
+      });
+    }
+  } else {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📦</div><h3>No products found</h3><p>${res?.data?.message || 'Try a different category or search term'}</p></div>`;
+  }
+}
+
+function buildPagination(page, pages) {
+  const el = document.getElementById('pagination');
+  if (pages <= 1) { el.innerHTML = ''; return; }
+  let html = `<button class="page-btn" onclick="goPage(${page-1})" ${page===1?'disabled':''}>‹</button>`;
+  for (let i = Math.max(1, page-2); i <= Math.min(pages, page+2); i++) {
+    html += `<button class="page-btn ${i===page?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  html += `<button class="page-btn" onclick="goPage(${page+1})" ${page===pages?'disabled':''}>›</button>`;
+  el.innerHTML = html;
+}
+function goPage(p) { currentPage = p; loadProducts(); window.scrollTo(0,0); }
+function filterBrand(cb) { currentBrand = cb.checked ? cb.value : ''; currentPage = 1; loadProducts(); }
+function clearFilters() { currentBrand = ''; minP = 0; maxP = 200000; currentPage = 1; document.getElementById('priceRange').value = 200000; document.getElementById('minPrice').value = 0; document.getElementById('maxPrice').value = 200000; document.querySelectorAll('#brandFilters input').forEach(i => i.checked = false); loadProducts(); }
+
+// Sort
+document.querySelectorAll('.sort-opt').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.sort-opt').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    currentSort = el.dataset.sort;
+    currentPage = 1;
+    loadProducts();
+  });
+});
+
+// Price filter
+document.getElementById('priceRange').addEventListener('input', function() {
+  maxP = +this.value;
+  document.getElementById('maxPrice').value = maxP;
+  clearTimeout(this._t);
+  this._t = setTimeout(() => { currentPage = 1; loadProducts(); }, 600);
+});
+document.getElementById('maxPrice').addEventListener('change', function() {
+  maxP = +this.value;
+  document.getElementById('priceRange').value = maxP;
+  currentPage = 1; loadProducts();
+});
+document.getElementById('minPrice').addEventListener('change', function() {
+  minP = +this.value;
+  currentPage = 1; loadProducts();
+});
+
+document.addEventListener('DOMContentLoaded', loadProducts);
+</script>
+</body>
+</html>

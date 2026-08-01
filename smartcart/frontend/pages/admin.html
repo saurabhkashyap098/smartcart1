@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel — SmartCart</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    .admin-wrap{max-width:1400px;margin:0 auto;padding:16px}
+    .tab-bar{display:flex;background:#fff;border-radius:2px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px}
+    .tab-item{padding:14px 24px;font-size:14px;font-weight:500;cursor:pointer;color:var(--text-secondary);border-bottom:3px solid transparent;transition:all .2s;display:flex;align-items:center;gap:8px}
+    .tab-item:hover{background:var(--bg);color:var(--primary)}
+    .tab-item.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:700}
+    .panel{display:none}
+    .panel.active{display:block}
+    .status-select{padding:4px 8px;border:1px solid var(--border);border-radius:2px;font-size:12px;background:#fff;cursor:pointer}
+    img.prod-thumb{width:40px;height:40px;object-fit:contain;background:var(--bg);border-radius:2px;border:1px solid var(--border)}
+  </style>
+</head>
+<body>
+<div id="navbar"></div>
+<div class="admin-wrap">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div><h1 style="font-size:24px;font-weight:700">⚙️ Admin Panel</h1><div style="font-size:13px;color:var(--text-secondary)">SmartCart Management Dashboard</div></div>
+    <div style="font-size:13px;color:var(--text-secondary)" id="adminGreet"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-cards" id="statCards">
+    <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value" id="statOrders">—</div><div class="stat-label">Total Orders</div></div>
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value" id="statRevenue">—</div><div class="stat-label">Total Revenue</div></div>
+    <div class="stat-card"><div class="stat-icon">🛍️</div><div class="stat-value" id="statProducts">—</div><div class="stat-label">Products</div></div>
+    <div class="stat-card"><div class="stat-icon">👤</div><div class="stat-value" id="statUsers">—</div><div class="stat-label">Users</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <div class="tab-item active" onclick="switchTab('orders')">📦 Orders</div>
+    <div class="tab-item" onclick="switchTab('products')">🛍️ Products</div>
+    <div class="tab-item" onclick="switchTab('users')">👤 Users</div>
+    <div class="tab-item" onclick="switchTab('addproduct')">➕ Add Product</div>
+  </div>
+
+  <!-- Orders Panel -->
+  <div class="panel active" id="panel-orders">
+    <div class="card">
+      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <span>All Orders</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select class="form-control" id="orderStatusFilter" style="width:160px" onchange="loadAdminOrders()">
+            <option value="">All Status</option>
+            <option value="placed">Placed</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="processing">Processing</option>
+            <option value="shipped">Shipped</option>
+            <option value="out_for_delivery">Out for Delivery</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="loadAdminOrders()">🔄 Refresh</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="ordersTable">
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Amount</th><th>Payment</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+          <tbody id="ordersBody"><tr><td colspan="8" style="text-align:center;padding:32px"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products Panel -->
+  <div class="panel" id="panel-products">
+    <div class="card">
+      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <span>All Products</span>
+        <div style="display:flex;gap:8px">
+          <input type="text" class="form-control" id="prodSearch" placeholder="Search products…" style="width:200px" oninput="loadAdminProducts()"/>
+          <button class="btn btn-primary btn-sm" onclick="switchTab('addproduct')">+ Add Product</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Rating</th><th>Active</th><th>Actions</th></tr></thead>
+          <tbody id="productsBody"><tr><td colspan="8" style="text-align:center;padding:32px"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users Panel -->
+  <div class="panel" id="panel-users">
+    <div class="card">
+      <div class="card-header">All Users</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Joined</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="usersBody"><tr><td colspan="7" style="text-align:center;padding:32px"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Product Panel -->
+  <div class="panel" id="panel-addproduct">
+    <div class="card">
+      <div class="card-header" id="addProdTitle">Add New Product</div>
+      <div class="card-body">
+        <input type="hidden" id="editProdId"/>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Product Name *</label><input class="form-control" id="pName" placeholder="Full product name"/></div>
+          <div class="form-group"><label class="form-label">Brand *</label><input class="form-control" id="pBrand" placeholder="Brand name"/></div>
+        </div>
+        <div class="form-group"><label class="form-label">Description *</label><textarea class="form-control" id="pDesc" rows="3" placeholder="Detailed product description"></textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Selling Price (₹) *</label><input type="number" class="form-control" id="pPrice" min="0"/></div>
+          <div class="form-group"><label class="form-label">Original MRP (₹) *</label><input type="number" class="form-control" id="pOrigPrice" min="0"/></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Category *</label>
+            <select class="form-control" id="pCategory">
+              <option value="">Select category</option>
+              <option>Electronics</option><option>Mobile Phones</option><option>Laptops</option>
+              <option>Fashion</option><option>Home & Kitchen</option><option>Books</option>
+              <option>Sports</option><option>Beauty</option><option>Toys</option>
+              <option>Grocery</option><option>Appliances</option><option>Furniture</option><option>Automotive</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Subcategory</label><input class="form-control" id="pSubcat" placeholder="e.g. Smartphones"/></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Stock Quantity *</label><input type="number" class="form-control" id="pStock" min="0"/></div>
+          <div class="form-group"><label class="form-label">Delivery Days</label><input type="number" class="form-control" id="pDelivery" value="5" min="1"/></div>
+        </div>
+        <div class="form-group"><label class="form-label">Seller Name</label><input class="form-control" id="pSeller" placeholder="Seller display name" value="SmartCart Official"/></div>
+        <div class="form-group"><label class="form-label">Warranty</label><input class="form-control" id="pWarranty" placeholder="e.g. 1 Year Manufacturer Warranty"/></div>
+        <div class="form-group"><label class="form-label">Image URLs (one per line) *</label><textarea class="form-control" id="pImages" rows="3" placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"></textarea><div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Enter full image URLs. Use Unsplash/Picsum for testing.</div></div>
+        <div class="form-group"><label class="form-label">Specifications (Key: Value, one per line)</label><textarea class="form-control" id="pSpecs" rows="4" placeholder="Display: 6.5 inch AMOLED&#10;RAM: 8GB&#10;Storage: 128GB"></textarea></div>
+        <div class="form-group"><label class="form-label">Highlights (one per line)</label><textarea class="form-control" id="pHighlights" rows="3" placeholder="5G enabled&#10;Fast charging 65W"></textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Tags (comma-separated)</label><input class="form-control" id="pTags" placeholder="phone, 5g, samsung"/></div>
+          <div class="form-group" style="display:flex;align-items:flex-end;gap:16px;padding-bottom:4px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px"><input type="checkbox" id="pFeatured"/> Featured Product</label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px"><input type="checkbox" id="pEmi"/> EMI Available</label>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button class="btn btn-primary" onclick="saveProduct()">Save Product</button>
+          <button class="btn btn-outline" onclick="clearProductForm()">Clear Form</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="footer"></div>
+<script src="/js/api.js"></script>
+<script>
+// Guard admin
+document.addEventListener('DOMContentLoaded',async()=>{
+  if(!Auth.isLoggedIn()||!Auth.isAdmin()){window.location.href='/index.html';return;}
+  const user=Auth.getUser();
+  document.getElementById('adminGreet').textContent=`Logged in as ${user.name}`;
+  loadStats();
+  loadAdminOrders();
+});
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-item').forEach((t,i)=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const tabs=['orders','products','users','addproduct'];
+  const idx=tabs.indexOf(tab);
+  document.querySelectorAll('.tab-item')[idx]?.classList.add('active');
+  document.getElementById('panel-'+tab)?.classList.add('active');
+  if(tab==='products')loadAdminProducts();
+  else if(tab==='users')loadAdminUsers();
+}
+
+async function loadStats(){
+  const [statsRes,prodRes,userRes]=await Promise.all([OrderAPI.getStats(),ProductAPI.getAll({limit:1}),apiFetch('/auth/users')]);
+  if(statsRes?.ok){
+    const s=statsRes.data.stats;
+    document.getElementById('statOrders').textContent=(s.totalOrders||0).toLocaleString('en-IN');
+    document.getElementById('statRevenue').textContent=fmt.price(s.totalRevenue||0);
+  }
+  if(prodRes?.ok) document.getElementById('statProducts').textContent=(prodRes.data.total||0).toLocaleString('en-IN');
+  if(userRes?.ok) document.getElementById('statUsers').textContent=(userRes.data.users?.length||0).toLocaleString('en-IN');
+}
+
+async function loadAdminOrders(){
+  const status=document.getElementById('orderStatusFilter').value;
+  const res=await OrderAPI.getAll(status?{status}:{});
+  const tbody=document.getElementById('ordersBody');
+  if(!res?.ok){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--red)">Failed to load</td></tr>';return;}
+  const orders=res.data.orders||[];
+  tbody.innerHTML=orders.length?orders.map(o=>`<tr>
+    <td><a href="/pages/order-detail.html?id=${o._id}" style="color:var(--primary);font-family:monospace;font-size:12px">#${o._id.slice(-8).toUpperCase()}</a></td>
+    <td><div style="font-size:13px;font-weight:600">${o.user?.name||'—'}</div><div style="font-size:11px;color:var(--text-secondary)">${o.user?.email||''}</div></td>
+    <td>${o.items.length} item${o.items.length!==1?'s':''}</td>
+    <td style="font-weight:700">${fmt.price(o.totalPrice)}</td>
+    <td><span class="badge badge-${o.isPaid?'success':'warning'}">${o.paymentMethod?.toUpperCase()}</span></td>
+    <td><span class="badge badge-info" style="font-size:11px">${(o.status||'').replace(/_/g,' ')}</span></td>
+    <td style="font-size:12px">${fmt.date(o.createdAt)}</td>
+    <td><select class="status-select" onchange="updateOrderStatus('${o._id}',this.value)">
+      ${['pending','confirmed','processing','shipped','out_for_delivery','delivered','cancelled'].map(s=>`<option value="${s}" ${s===o.status?'selected':''}>${s.replace(/_/g,' ')}</option>`).join('')}
+    </select></td>
+  </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-secondary)">No orders found</td></tr>';;
+}
+
+async function updateOrderStatus(id,status){
+  const res=await OrderAPI.updateStatus(id,status);
+  if(res?.ok)showToast('Status updated ✅');
+  else{showToast(res?.data?.message||'Failed','error');loadAdminOrders();}
+}
+
+async function loadAdminProducts(){
+  const q=document.getElementById('prodSearch')?.value||'';
+  const res=await ProductAPI.getAll({search:q,limit:50,isActive:'all'});
+  const tbody=document.getElementById('productsBody');
+  if(!res?.ok){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--red)">Failed to load</td></tr>';return;}
+  const products=res.data.products||[];
+  tbody.innerHTML=products.length?products.map(p=>`<tr>
+    <td><img class="prod-thumb" src="${p.images?.[0]||'https://via.placeholder.com/40'}" alt="${p.name}"/></td>
+    <td><div style="font-size:13px;font-weight:600;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div><div style="font-size:11px;color:var(--text-secondary)">${p.brand}</div></td>
+    <td style="font-size:13px">${p.category}</td>
+    <td><div style="font-weight:700">${fmt.price(p.price)}</div>${p.originalPrice>p.price?`<div style="font-size:11px;color:var(--text-secondary);text-decoration:line-through">${fmt.price(p.originalPrice)}</div>`:''}</td>
+    <td><span style="color:${p.stock>10?'var(--green)':p.stock>0?'#f57c00':'var(--red)'};font-weight:600">${p.stock}</span></td>
+    <td>${p.rating>0?`<span class="rating-badge">${p.rating.toFixed(1)}★</span>`:'—'}</td>
+    <td><span class="badge ${p.isActive?'badge-success':'badge-danger'}">${p.isActive?'Active':'Inactive'}</span></td>
+    <td><div style="display:flex;gap:6px">
+      <button class="btn btn-outline btn-sm" onclick="editProduct('${p._id}')">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p._id}','${p.name.replace(/'/g,'').slice(0,20)}')">Del</button>
+    </div></td>
+  </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-secondary)">No products found</td></tr>';;
+}
+
+async function editProduct(id){
+  const res=await ProductAPI.getOne(id);
+  if(!res?.ok){showToast('Failed to load product','error');return;}
+  const p=res.data.product;
+  switchTab('addproduct');
+  document.getElementById('addProdTitle').textContent='Edit Product';
+  document.getElementById('editProdId').value=p._id;
+  document.getElementById('pName').value=p.name;
+  document.getElementById('pBrand').value=p.brand;
+  document.getElementById('pDesc').value=p.description;
+  document.getElementById('pPrice').value=p.price;
+  document.getElementById('pOrigPrice').value=p.originalPrice;
+  document.getElementById('pCategory').value=p.category;
+  document.getElementById('pSubcat').value=p.subcategory||'';
+  document.getElementById('pStock').value=p.stock;
+  document.getElementById('pDelivery').value=p.deliveryDays||5;
+  document.getElementById('pSeller').value=p.seller||'';
+  document.getElementById('pWarranty').value=p.warranty||'';
+  document.getElementById('pImages').value=p.images?.join('\n')||'';
+  document.getElementById('pSpecs').value='';
+  // handle specs as Map or plain object
+  if(p.specifications instanceof Object){
+    const entries=p.specifications instanceof Map?[...p.specifications.entries()]:Object.entries(p.specifications);
+    document.getElementById('pSpecs').value=entries.map(([k,v])=>`${k}: ${v}`).join('\n');
+  }
+  document.getElementById('pHighlights').value=p.highlights?.join('\n')||'';
+  document.getElementById('pTags').value=p.tags?.join(', ')||'';
+  document.getElementById('pFeatured').checked=p.isFeatured||false;
+  document.getElementById('pEmi').checked=p.emi||false;
+  window.scrollTo(0,0);
+}
+
+async function deleteProduct(id,name){
+  if(!confirm(`Delete "${name}"? This cannot be undone.`))return;
+  const res=await ProductAPI.delete(id);
+  if(res?.ok){showToast('Product deleted');loadAdminProducts();}
+  else showToast(res?.data?.message||'Failed','error');
+}
+
+async function saveProduct(){
+  const editId=document.getElementById('editProdId').value;
+  const imagesRaw=document.getElementById('pImages').value.trim().split('\n').filter(l=>l.trim());
+  const specsRaw=document.getElementById('pSpecs').value.trim().split('\n').filter(l=>l.includes(':'));
+  const highlightsRaw=document.getElementById('pHighlights').value.trim().split('\n').filter(l=>l.trim());
+  const body={
+    name:document.getElementById('pName').value,
+    brand:document.getElementById('pBrand').value,
+    description:document.getElementById('pDesc').value,
+    price:Number(document.getElementById('pPrice').value),
+    originalPrice:Number(document.getElementById('pOrigPrice').value),
+    category:document.getElementById('pCategory').value,
+    subcategory:document.getElementById('pSubcat').value,
+    stock:Number(document.getElementById('pStock').value),
+    deliveryDays:Number(document.getElementById('pDelivery').value),
+    seller:document.getElementById('pSeller').value,
+    warranty:document.getElementById('pWarranty').value,
+    images:imagesRaw.map(url=>url.trim()),
+    specifications:specsRaw.reduce((obj,l)=>{const[key,...rest]=l.split(':');obj[key.trim()]=rest.join(':').trim();return obj;},{}),
+    highlights:highlightsRaw,
+    tags:document.getElementById('pTags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    isFeatured:document.getElementById('pFeatured').checked,
+    emi:document.getElementById('pEmi').checked,
+  };
+  if(!body.name||!body.brand||!body.description||!body.price||!body.originalPrice||!body.category||!body.images.length){showToast('Please fill all required fields','error');return;}
+  const res=editId?await ProductAPI.update(editId,body):await ProductAPI.create(body);
+  if(res?.ok){showToast(editId?'Product updated ✅':'Product added ✅');clearProductForm();switchTab('products');}
+  else showToast(res?.data?.message||'Failed','error');
+}
+
+function clearProductForm(){
+  document.getElementById('addProdTitle').textContent='Add New Product';
+  document.getElementById('editProdId').value='';
+  ['pName','pBrand','pDesc','pPrice','pOrigPrice','pSubcat','pStock','pSeller','pWarranty','pImages','pSpecs','pHighlights','pTags'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pCategory').value='';
+  document.getElementById('pDelivery').value='5';
+  document.getElementById('pFeatured').checked=false;
+  document.getElementById('pEmi').checked=false;
+}
+
+async function loadAdminUsers(){
+  const res=await apiFetch('/auth/users');
+  const tbody=document.getElementById('usersBody');
+  if(!res?.ok){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--red)">Failed to load</td></tr>';return;}
+  const users=res.data.users||[];
+  tbody.innerHTML=users.map(u=>`<tr>
+    <td style="font-weight:600;font-size:13px">${u.name}</td>
+    <td style="font-size:13px">${u.email}</td>
+    <td style="font-size:13px">${u.phone||'—'}</td>
+    <td><span class="badge ${u.role==='admin'?'badge-info':'badge-success'}">${u.role}</span></td>
+    <td style="font-size:12px">${fmt.date(u.createdAt)}</td>
+    <td><span class="badge ${u.isActive?'badge-success':'badge-danger'}">${u.isActive?'Active':'Blocked'}</span></td>
+    <td>${u.role!=='admin'?`<button class="btn btn-sm btn-outline" onclick="toggleUser('${u._id}')">${u.isActive?'Block':'Unblock'}</button>`:'—'}</td>
+  </tr>`).join('');
+}
+
+async function toggleUser(id){
+  const res=await apiFetch(`/auth/users/${id}/toggle`,{method:'PUT'});
+  if(res?.ok){showToast('User status updated');loadAdminUsers();}
+  else showToast(res?.data?.message||'Failed','error');
+}
+</script>
+</body>
+</html>

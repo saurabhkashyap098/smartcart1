@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SmartCart — India's Smartest Shopping Destination</title>
+  <meta name="description" content="Shop electronics, fashion, home & more at the best prices on SmartCart."/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    .hero-wrap{display:grid;grid-template-columns:1fr 280px;gap:0;margin-bottom:12px;}
+    .hero-carousel{position:relative;overflow:hidden;background:#fff;}
+    .hero-slides{display:flex;transition:transform .5s ease;}
+    .hero-slide{min-width:100%;cursor:pointer;}
+    .hero-slide img{width:100%;height:280px;object-fit:cover;display:block;}
+    .carousel-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.85);border:none;width:36px;height:64px;font-size:20px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;}
+    .carousel-btn.prev{left:0;border-radius:0 4px 4px 0;}
+    .carousel-btn.next{right:0;border-radius:4px 0 0 4px;}
+    .login-panel{background:linear-gradient(160deg,#2874f0,#1a4ab5);padding:24px 20px;display:flex;flex-direction:column;gap:16px;}
+    .login-panel h3{font-size:22px;font-weight:700;color:#fff;line-height:1.3;}
+    .login-panel p{font-size:13px;color:rgba(255,255,255,.8);}
+    .login-panel .lp-btn{background:#fff;color:var(--primary);font-weight:700;font-size:14px;border:none;padding:10px 0;border-radius:2px;cursor:pointer;text-align:center;display:block;transition:.2s;}
+    .login-panel .lp-btn:hover{background:#f0f5ff;}
+    .login-panel .lp-new{font-size:12px;color:rgba(255,255,255,.7);text-align:center;}
+    .cat-row{background:#fff;border-radius:2px;box-shadow:var(--shadow);margin-bottom:12px;padding:16px 12px 8px;}
+    .cat-row h3{font-size:18px;font-weight:700;padding:0 8px 12px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+    .cat-icons{display:flex;gap:4px;overflow-x:auto;-ms-overflow-style:none;scrollbar-width:none;}
+    .cat-icons::-webkit-scrollbar{display:none;}
+    .cat-item{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:88px;padding:8px 4px;cursor:pointer;border-radius:4px;transition:.2s;text-decoration:none;}
+    .cat-item:hover{background:var(--primary-light);}
+    .cat-item img{width:64px;height:64px;object-fit:cover;border-radius:50%;border:2px solid var(--border);}
+    .cat-item span{font-size:12px;font-weight:500;color:var(--text);text-align:center;line-height:1.3;}
+    @media(max-width:900px){.hero-wrap{grid-template-columns:1fr;}.login-panel{display:none;}}
+  </style>
+</head>
+<body>
+<div id="navbar"></div>
+
+<div class="container page-wrap">
+
+  <div class="hero-wrap">
+    <div class="hero-carousel section-card">
+      <div class="hero-slides" id="heroSlides"></div>
+      <button class="carousel-btn prev" id="heroPrev">‹</button>
+      <button class="carousel-btn next" id="heroNext">›</button>
+    </div>
+    <div class="login-panel section-card" id="loginPanel">
+      <div>
+        <h3>Login &amp; Get Access to Best Deals</h3>
+        <p>Get access to your Orders, Wishlist and Recommendations</p>
+      </div>
+      <a href="/pages/login.html" class="lp-btn" id="lpLoginBtn">Login Securely →</a>
+      <p class="lp-new">New to SmartCart? <a href="/pages/login.html#register" style="color:#ffe500;font-weight:700;">Create account</a></p>
+    </div>
+  </div>
+
+  <div class="cat-row">
+    <h3>Shop by Category</h3>
+    <div class="cat-icons">
+      <a href="/pages/products.html?category=Electronics" class="cat-item">
+        <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=120&h=120&fit=crop" alt="Electronics"/>
+        <span>Electronics</span>
+      </a>
+      <a href="/pages/products.html?category=Electronics" class="cat-item">
+        <img src="https://images.unsplash.com/photo-1585060544812-6b45742d762f?w=120&h=120&fit=crop" alt="Mobiles"/>
+        <span>Mobiles</span>
+      </a>
+      <a href="/pages/products.html?category=Electronics" class="cat-item">
+        <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=120&h=120&fit=crop" alt="Laptops"/>
+        <span>Laptops</span>
+      </a>
+      <a href="/pages/products.html?category=Fashion" class="cat-item">
+        <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=120&h=120&fit=crop" alt="Fashion"/>
+        <span>Fashion</span>
+      </a>
+      <a href="/pages/products.html?category=Home" class="cat-item">
+        <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=120&h=120&fit=crop" alt="Home"/>
+        <span>Home &amp; Kitchen</span>
+      </a>
+      <a href="/pages/products.html?category=Beauty" class="cat-item">
+        <img src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=120&h=120&fit=crop" alt="Beauty"/>
+        <span>Beauty</span>
+      </a>
+      <a href="/pages/products.html?category=Sports" class="cat-item">
+        <img src="https://images.unsplash.com/photo-1601925228194-0b1de1a98a4e?w=120&h=120&fit=crop" alt="Sports"/>
+        <span>Sports</span>
+      </a>
+      <a href="/pages/products.html?category=Books" class="cat-item">
+        <img src="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=120&h=120&fit=crop" alt="Books"/>
+        <span>Books</span>
+      </a>
+      <a href="/pages/products.html?category=Toys" class="cat-item">
+        <img src="https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=120&h=120&fit=crop" alt="Toys"/>
+        <span>Toys</span>
+      </a>
+      <a href="/pages/products.html?category=Grocery" class="cat-item">
+        <img src="https://images.unsplash.com/photo-1585664811087-47f65abbad64?w=120&h=120&fit=crop" alt="Grocery"/>
+        <span>Grocery</span>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<div id="products" style="padding:0 0 24px;"></div>
+<div id="footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/products.js"></script>
+<script>
+const banners=[
+  {img:'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=960&h=280&fit=crop',url:'/pages/products.html?category=Electronics'},
+  {img:'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=960&h=280&fit=crop',url:'/pages/products.html?category=Fashion'},
+  {img:'https://images.unsplash.com/photo-1556740758-90de374c12ad?w=960&h=280&fit=crop',url:'/pages/products.html?category=Home'},
+  {img:'https://images.unsplash.com/photo-1585515320310-259814833e62?w=960&h=280&fit=crop',url:'/pages/products.html?category=Home'},
+];
+const slidesEl=document.getElementById('heroSlides');
+let cur=0;
+slidesEl.innerHTML=banners.map(b=>`<div class="hero-slide" onclick="location.href='${b.url}'"><img src="${b.img}" loading="lazy"/></div>`).join('');
+function goSlide(n){cur=(n+banners.length)%banners.length;slidesEl.style.transform=`translateX(-${cur*100}%)`;}
+document.getElementById('heroPrev').onclick=()=>goSlide(cur-1);
+document.getElementById('heroNext').onclick=()=>goSlide(cur+1);
+setInterval(()=>goSlide(cur+1),4000);
+
+// Hide login panel if already logged in
+document.addEventListener('DOMContentLoaded',()=>{
+  const lp=document.getElementById('loginPanel');
+  const btn=document.getElementById('lpLoginBtn');
+  if(Auth.isLoggedIn()&&lp){
+    const u=Auth.getUser();
+    lp.innerHTML=`<div><h3>Welcome back,<br/>${u.name.split(' ')[0]}! 👋</h3><p>Check your orders and wishlist</p></div>
+      <a href="/pages/orders.html" class="lp-btn">My Orders</a>
+      <a href="/pages/wishlist.html" class="lp-btn" style="background:rgba(255,255,255,.15);color:#fff;">My Wishlist ❤</a>`;
+  }
+});
+</script>
+</body>
+</html>

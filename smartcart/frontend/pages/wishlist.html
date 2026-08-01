@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Wishlist — SmartCart</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<div id="navbar"></div>
+<div class="container page-wrap">
+  <div class="breadcrumb"><a href="/index.html">Home</a><span class="sep">›</span><span>Wishlist</span></div>
+  <div id="wishlistContent" class="loading-wrap"><div class="spinner"></div></div>
+</div>
+<div id="footer"></div>
+<script src="/js/api.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!Auth.isLoggedIn()) { window.location.href = '/pages/login.html?redirect=/pages/wishlist.html'; return; }
+  await loadWishlist();
+});
+
+async function loadWishlist() {
+  const el = document.getElementById('wishlistContent');
+  const res = await AuthAPI.getWishlist();
+  if (!res?.ok) { el.innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><p>Failed to load wishlist</p></div>'; return; }
+  const items = res.data.wishlist || [];
+  if (!items.length) {
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">❤️</div><h3>Your Wishlist is empty</h3><p>Save items you love here. Review them anytime and move them to your cart.</p><a href="/index.html" class="btn btn-primary">Continue Shopping</a></div>`;
+    return;
+  }
+  el.className='';
+  el.innerHTML=`<h2 style="font-size:18px;font-weight:700;margin-bottom:16px;">My Wishlist (${items.length})</h2>
+    <div class="products-grid">${items.map(p=>wishCard(p)).join('')}</div>`;
+}
+
+function wishCard(p) {
+  const disc = p.originalPrice > p.price ? Math.round((p.originalPrice-p.price)/p.originalPrice*100) : 0;
+  return `<div class="product-card" style="position:relative">
+    ${disc>5?`<span class="offer-badge">${disc}% off</span>`:''}
+    <button class="wishlist-btn active" style="opacity:1" onclick="removeWish('${p._id}',this)">❤</button>
+    <div class="product-img-wrap" onclick="location.href='/pages/product.html?id=${p._id}'" style="cursor:pointer">
+      <img src="${p.images?.[0]||'https://via.placeholder.com/160'}" alt="${p.name}" loading="lazy"/>
+    </div>
+    <div class="product-name" title="${p.name}">${p.name}</div>
+    <div class="product-price">
+      <span class="price-current">₹${Number(p.price).toLocaleString('en-IN')}</span>
+      ${p.originalPrice>p.price?`<span class="price-original">₹${Number(p.originalPrice).toLocaleString('en-IN')}</span>`:''}
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" style="flex:1" onclick="addToCart('${p._id}',this)">Add to Cart</button>
+    </div>
+  </div>`;
+}
+
+async function removeWish(id, btn) {
+  const res = await AuthAPI.toggleWishlist(id);
+  if (res?.ok) { showToast('Removed from Wishlist','info'); await loadWishlist(); }
+}
+
+async function addToCart(id, btn) {
+  if (!Auth.isLoggedIn()) { window.location.href='/pages/login.html'; return; }
+  btn.disabled=true; btn.textContent='Adding...';
+  const res = await CartAPI.add(id, 1);
+  if (res?.ok) { showToast('Added to cart ✓'); updateCartBadge(); }
+  else showToast(res?.data?.message||'Failed','error');
+  btn.disabled=false; btn.textContent='Add to Cart';
+}
+</script>
+</body>
+</html>
