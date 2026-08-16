@@ -32,8 +32,14 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 app.use(
   cors({
     origin: (origin, cb) => {
-      // Allow requests with no origin (e.g. curl, Postman)
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      // In production on Render, allow all origins (same-origin requests from the server itself)
+      if (!origin) return cb(null, true);
+      // Allow same-host Render URLs and any configured origin
+      if (
+        allowedOrigins.includes(origin) ||
+        process.env.NODE_ENV === 'production' ||
+        origin.endsWith('.onrender.com')
+      ) return cb(null, true);
       cb(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,

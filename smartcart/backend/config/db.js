@@ -4,24 +4,25 @@ const logger = require('./logger');
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 30000,  // 30 s – give Atlas time to respond
-      connectTimeoutMS:         30000,
-      socketTimeoutMS:          45000,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS:         10000,
+      socketTimeoutMS:          30000,
       maxPoolSize:              10,
     });
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     logger.error(`MongoDB connection failed: ${error.message}`);
-    // Retry once after 5 seconds before exiting
+    logger.warn('Server will continue running without database. Some features may be unavailable.');
+    // Retry in background without blocking server startup or crashing
     setTimeout(async () => {
       try {
-        await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 30000 });
-        logger.info('MongoDB Connected (retry)');
+        await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 15000 });
+        logger.info('MongoDB Connected (retry successful)');
       } catch (err) {
         logger.error(`MongoDB retry failed: ${err.message}`);
-        process.exit(1);
+        // Do NOT exit — keep server alive for AI chat & static files
       }
-    }, 5000);
+    }, 8000);
   }
 };
 
