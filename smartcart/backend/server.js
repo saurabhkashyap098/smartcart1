@@ -184,10 +184,10 @@ const server = app.listen(PORT, () => {
   logger.info(`🚀 SmartCart API running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
 });
 
-// Graceful shutdown
+// Graceful shutdown — log unhandled rejections but DO NOT exit (MongoDB timeouts etc. should not crash the server)
 process.on('unhandledRejection', (err) => {
-  logger.error(`Unhandled Rejection: ${err.message}`);
-  server.close(() => process.exit(1));
+  logger.error(`Unhandled Rejection: ${err?.message || err}`);
+  // Do NOT exit — keep serving requests even if DB/external service fails
 });
 
 process.on('SIGTERM', () => {
